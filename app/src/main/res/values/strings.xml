@@ -1,0 +1,13 @@
+<resources>
+    <string name="app_name">Assignment2</string>
+    <string name="action_settings">Settings</string>
+    <string-array name="genre_array">
+        <item>Shooter</item>
+        <item>Adventure</item>
+        <item>Action</item>
+        <item>RPG</item>
+        <item>Indie</item>
+        <item>Puzzle</item>
+    </string-array>
+
+</resources>
