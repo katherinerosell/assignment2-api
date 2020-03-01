@@ -7,4 +7,12 @@
         android:orderInCategory="100"
         android:title="@string/action_settings"
         app:showAsAction="never" />
+    <item android:id="@+id/action_share"
+        android:title="Share"
+        app:showAsAction="never"
+        app:actionProviderClass="androidx.appcompat.widget.ShareActionProvider" />
+    <item
+        android:id="@+id/action_help"
+        android:title="Help Option"
+        app:showAsAction="never"/>
 </menu>

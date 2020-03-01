@@ -1,20 +1,20 @@
 package edu.quinnipiac.assignment2;
-
-import android.util.Log;
-
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-import java.sql.Array;
 import java.util.ArrayList;
 
 /**
+ * GenreHandler
  * @Author: Katherine Rosell
- * The GenreHandler class holds the
+ * 2/29/2020
+ * The GenreHandler class holds the main for loop fuction that saves the games and image background
+ * within each genre.
  */
 public class GenreHandler {
     final public static String[] GENRES = new String[19];//there are 19 genres, 0-18 index
     public static ArrayList<String> myGamesofGenre = new ArrayList<String>(5);
+    public static String imageBKG;
 
     public GenreHandler(){
         //get all genre names into the array
@@ -38,6 +38,7 @@ public class GenreHandler {
         GENRES[16] = "Board Games";
         GENRES[17] = "Educational";
         GENRES[18] = "Card";
+
     }
 
     public String getGenre(String genreJSONString) throws Exception{
@@ -45,30 +46,48 @@ public class GenreHandler {
         return genreJSONObj.getString("text");
     }
 
+    /**
+     * getGamesofGenre
+     *
+     * The meat and potatoes of this application.
+     * Iterates over JSONArrays and compares JSONObject "name" attributes to the genre selected in
+     * MainActivity. Checks the JSON name attributes and looks for JSONArray "games" within the
+     * JSONObj that matched the genre picked.
+     *
+     * @param gamesofGenre
+     * @param myCurrGenre
+     * @return
+     * @throws Exception
+     */
 
-    public ArrayList<String> getGamesofGenre(String gamesofGenre) throws Exception{
-        JSONObject genreJSONObj = new JSONObject(gamesofGenre);
-        //JSONArray games = genreJSONObj.getJSONArray("games");//get collection of objects
-        //search through "results" array first and look by GENRE
-        JSONArray resultArray = genreJSONObj.getJSONArray("results");
-
-        for (int a = 0; a < resultArray.length(); a++){
-            JSONObject currGenre = resultArray.getJSONObject(a);
-            if (currGenre.getJSONObject("name").toString().equals(gamesofGenre)){
-                Log.d("GENRE HANDLER", "Current Genre" + currGenre);
-                //if object in array equals genre picked in spinner, print all names
-                JSONArray gamesArr = currGenre.getJSONArray("games");
-                for (int b = 0; b < gamesArr.length(); b++){
-                    JSONObject gameObj = resultArray.getJSONObject(b);
-                    String gameTitle = gameObj.getString("name");
-                    myGamesofGenre.add(gameTitle);
+    public ArrayList<String> getGamesofGenre(String gamesofGenre, String myCurrGenre) throws Exception{
+        JSONObject allGenresJSONObj = new JSONObject(gamesofGenre);
+        JSONArray resultArray = allGenresJSONObj.getJSONArray("results");
+        for (int i = 0; i < resultArray.length(); i++){
+            JSONObject genreSection = resultArray.getJSONObject(i);//results array is a list of all attributes per genre per their individual id tags
+            if (genreSection.getString("name").equals(myCurrGenre)){
+                JSONArray gamesIDs = genreSection.getJSONArray("games");
+                imageBKG = genreSection.getString("image_background"); //found the image_background url, save it for later use.
+                for (int j = 0; j < gamesIDs.length(); j++){
+                    JSONObject gameID = gamesIDs.getJSONObject(j);
+                    myGamesofGenre.add(gameID.getString("name"));
                 }
-            } else{}
+            }
         }
+        //Log.d("GENRE HANDLER", "  ------------    GAME TITLES     -------------  " + myGamesofGenre);
         return myGamesofGenre;
     }
 
+    /**
+     * getImageBackground()
+     * get method for accessing the specific image background per the genre that was selected.
+     * @return
+     */
 
+    public String getImageBackground(){
+        String imgURL = imageBKG.toString();
+        return imgURL;
+    }
 
 
 }

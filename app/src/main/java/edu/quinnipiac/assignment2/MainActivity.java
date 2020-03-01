@@ -1,24 +1,23 @@
 package edu.quinnipiac.assignment2;
 
-import android.content.Context;
 import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
-
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.widget.Toolbar;
-
 import android.os.StrictMode;
 import android.util.Log;
-import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.widget.Adapter;
-import android.widget.AdapterView;
+import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.Spinner;
+import android.widget.Toast;
+
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.ShareActionProvider;
+import androidx.appcompat.widget.Toolbar;
+import androidx.core.view.MenuItemCompat;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -29,106 +28,74 @@ import java.util.ArrayList;
 
 import javax.net.ssl.HttpsURLConnection;
 
+/**
+ * MainActivity
+ * @Authors: Katherine Rosell, Jenna Saleh
+ * Similar to the NumbersApp, the user selects a genre of a game and this code establishes a network connection!
+ *
+ */
+
+
 public class MainActivity extends AppCompatActivity {
+    ShareActionProvider provider;
     //urls of api here!
-    private String urlHost = "https://rawg-video-games-database.p.rapidapi.com/genres";
-    //private String urlHost ="https://rawg-video-games-database.p.rapidapi.com/games";
-    //private String urlGenre = "/genres?fragment=true&json=true";//so I don't have to hard code it in
-    private String key = "cf3ce5d779mshb68e7898cff4e2ep1b8712jsn1cd80cdd8b5b";
-    //private String key = "01eb93a0d5msh5b02026cb0b8933p125f54jsn0256762dca37";
-    GenreHandler genreHandler = new GenreHandler();
+    private final String urlHost = "https://rawg-video-games-database.p.rapidapi.com/genres";
+    private final String key = "cf3ce5d779mshb68e7898cff4e2ep1b8712jsn1cd80cdd8b5b"; //katie's specific key, different from Jenna's for some reason
+    private static GenreHandler genreHandler = new GenreHandler();
+    private static String genrePicked;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        //just a precaution for version errors
         if (Build.VERSION.SDK_INT > 9){
             StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
             StrictMode.setThreadPolicy(policy);
         }
-/**
- * Get JSON object from genres, "games"
- */
-        //Jenna is handling the toolbar - we have different versions and mine ~sometimes~ breaks when I restart my computer
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        // to String[] from GenreHandler
+        //Spinner object
         final Spinner genreSpinner = findViewById(R.id.genre_spinner);
         ArrayAdapter<String> genreAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_spinner_item, genreHandler.GENRES);
         genreAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         genreSpinner.setAdapter(genreAdapter);
-
-        //the Find Games! button is what really allows the user to go to the next activity using the spinner
+        //the Find Games button is what really allows the user to go to the next activity using the spinner
+        //we only want to go to the next activity when the user clicks the find games button
         Button searchButton = findViewById(R.id.searchB);//search Button
         searchButton.setOnClickListener(new View.OnClickListener(){
             @Override
             public void onClick(View v) {
                 String spinnerText = genreSpinner.getSelectedItem().toString();
                 Log.d("SPINNER", spinnerText);
-                final String genrePicked = spinnerText;
+                genrePicked = spinnerText;
                 RetrieveGenreGames myFetchRequest = (RetrieveGenreGames) new RetrieveGenreGames().execute(genrePicked);
 
-                //send whatever is in the spinner, the GENRE, to 2nd activity
-                //spinner sends it's genre picked to ASYNC TASK - sends genre to retrieve list of games
+            }
+        });
 
-                genreSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-                    @Override
-                    public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                        final String genrePicked = (String) parent.getItemAtPosition(position);
-                        new RetrieveGenreGames().execute(genrePicked);
-                        Log.d("Selected Genre", genrePicked);
-                    }
-                //don't do anything right now if nothing is selected
-                    @Override
-                    public void onNothingSelected(AdapterView<?> parent) { }
-                });
-                 }
-        });//end of onClickListener for Search Button
-    }//end of onCreate method
-
-    /**
-     * LittleAdapterClass
-     * small basic class to handle the selected item in the spinner
-     * the button actually makes an instance of this class and uses it
-     */
-    /**
-    private class LittleAdapterClass implements AdapterView.OnItemSelectedListener {
-        //simple constructor
-        public LittleAdapterClass(Context context) {
-            super();
-        }
-     //from listener
-        @Override
-        public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-            final String genrePicked = (String) parent.getItemAtPosition(position);
-            new RetrieveGenreGames().execute(genrePicked);
-            Log.d("Selected Genre", genrePicked);
-        }
-
-        @Override
-        public void onNothingSelected(AdapterView<?> parent) {
-        }
     }
-**/
-    /**
-     * getStringRead
-     */
 
+    /**
+     * RetrieveGenreGames
+     * AsyncTask handles the internet connection to the api information we are using.
+     */
 
     private class RetrieveGenreGames extends AsyncTask<String, Void, String>{
 
         @Override
         protected String doInBackground(String... strings) {
             HttpURLConnection mainConnection = null;
-            ArrayList<String> gamesOfGenre= new ArrayList<String>();
+            ArrayList<String> gamesOfGenre;
 
             Log.d("RetrieveGenreGames", "RetrieveGenreGames");
             try {
-                URL url = new URL(urlHost);
+                Log.d("RetrieveGenreGames", "---------in try block--------");
+                URL url = new URL(urlHost); //+ "/" + genrePicked //no need for ?mashape-key=....
                 mainConnection = (HttpsURLConnection) url.openConnection();
                 mainConnection.setRequestMethod("GET");
-                mainConnection.setRequestProperty("x-rapidapi-key", "cf3ce5d779mshb68e7898cff4e2ep1b8712jsn1cd80cdd8b5b");
+                mainConnection.setRequestProperty("x-rapidapi-key", key);
                 mainConnection.connect();
 
                 if (mainConnection.getInputStream() == null) {
@@ -136,8 +103,8 @@ public class MainActivity extends AppCompatActivity {
                     return null;
                 }
                 gamesOfGenre = getStringRead(
-                        new BufferedReader(new InputStreamReader((mainConnection.getInputStream()))));
-                Log.d("games in genre", gamesOfGenre.toString());
+                        new BufferedReader(new InputStreamReader((mainConnection.getInputStream()))), strings[0]);
+                //Log.d("games in genre", gamesOfGenre.toString());
             } catch (Exception ex){
                 Log.e("ERR in RETREIVE", ex.toString());
                 return null;
@@ -147,7 +114,8 @@ public class MainActivity extends AppCompatActivity {
             return String.valueOf(gamesOfGenre);
         }
 
-        private ArrayList<String> getStringRead(BufferedReader bufferedReader) throws Exception {
+
+        private ArrayList<String> getStringRead(BufferedReader bufferedReader, String currGenere) throws Exception {
             StringBuffer buffer = new StringBuffer();
             String ln; //the line we are reading from
             while((ln=bufferedReader.readLine()) != null){  buffer.append(ln + '\n');  }
@@ -155,39 +123,71 @@ public class MainActivity extends AppCompatActivity {
                 try{ bufferedReader.close(); }
                 catch(IOException err){Log.d("oops no mainAct", "Error" + err.getMessage());}
             }
-            Log.d("Games of Genre", buffer.toString());
-            return genreHandler.getGamesofGenre(buffer.toString());
+            return genreHandler.getGamesofGenre(buffer.toString(), currGenere);
         }
 
+        /**
+         * OnPOstExecute
+         * Using the "res" String we creates, which is the list of games we were able to retrieve,
+         * send that information into the second activity to be displayed.
+         * As well as the image url of the certain genre
+         * @param res
+         */
         @Override
         protected void onPostExecute(String res){
             if (res != null){
+                Log.d("*************   MAIN ACTIVITY  *************", " on post execute : res   " + res + " ------------ TYPE OF res:  "  + res.getClass());
                 Intent intent = new Intent(MainActivity.this, SecondActivity.class);
-                intent.putExtra("List of games", res);
+                intent.putExtra("List of Games", res);
+                intent.putExtra("Genre", genrePicked);
+                intent.putExtra("Img", genreHandler.getImageBackground());
                 startActivity(intent);
             }
         }
 
-    }//end of RetrieveGenreGames
+    }
 
+//Jenna's implementation of Action Bar
+@Override
+public boolean onCreateOptionsMenu(Menu menu) {
+    // Inflate the menu; this adds items to the app bar
+    getMenuInflater().inflate(R.menu.menu_main, menu);
+    MenuItem menuItem = menu.findItem(R.id.action_share);
+    provider = (ShareActionProvider) MenuItemCompat.getActionProvider(menuItem);
+    setShareActionIntent("Hi");
+    return super.onCreateOptionsMenu(menu);
+}
 
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.menu_main, menu);
-        return true;
+    private void setShareActionIntent(String text) {
+        Intent intent = new Intent(Intent.ACTION_SEND);
+        intent.setType("text/plain");
+        intent.putExtra(Intent.EXTRA_TEXT, text);
+        provider.setShareIntent(intent);
     }
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
         int id = item.getItemId();
-        //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings) {
-            return true;//if player clicks settings - don't do anything atm
+        if (id== R.id.action_help){
+            Intent help = new Intent(this, HelpActivity.class);
+            startActivity(help);
+            return true;
         }
-        return super.onOptionsItemSelected(item);
+        if (id == R.id.action_settings) {
+            Intent settings = new Intent(this, SettingsActivity.class);
+            startActivity(settings);
+            return true;
+        }
+        if (id == R.id.action_share) {
+            Intent intent = new Intent(Intent.ACTION_SEND);
+            intent.setType("text/plain");
+            intent.putExtra(Intent.EXTRA_TEXT, "Hello");
+            if (provider != null) {
+                provider.setShareIntent(intent);
+            } else
+                Toast.makeText(this, "no provider", Toast.LENGTH_LONG).show();
+            return true;
+        }
+        return false;
     }
 }
